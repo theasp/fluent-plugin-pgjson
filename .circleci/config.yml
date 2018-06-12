@@ -45,14 +45,15 @@ workflows:
       - docker-image:
           requires:
             - gem
-  weekly:
+
+  docker-weekly:
     triggers:
       - schedule:
           cron: "0 13 * * 2"
           filters:
             branches:
               only:
-                - master
+                - docker
     jobs:
       - gem
       - docker-image:
