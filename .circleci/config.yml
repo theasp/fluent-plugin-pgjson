@@ -1,0 +1,60 @@
+---
+version: 2
+
+workspace_root: &workspace_root
+    .
+
+attach_workspace: &attach_workspace
+  attach_workspace:
+    at: *workspace_root
+
+jobs:
+  gem:
+    docker:
+      - image: circleci/ruby:latest-node-browsers
+    steps:
+      - checkout
+      - run: |
+          gem build *.gemspec
+          mkdir -p build
+          mkdir -p .circle-workspace
+          cp *.gem build/
+          ls -l build/
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - build
+
+  docker-image:
+    docker:
+      - image: docker
+    steps:
+      - checkout
+      - *attach_workspace
+      - setup_remote_docker
+      - run: |
+          docker image build -t theasp/fluentd-plugins:pgjson -f Dockerfile .
+          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+          docker push theasp/fluentd-plugins:pgjson
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - gem
+      - docker-image:
+          requires:
+            - gem
+  weekly:
+    triggers:
+      - schedule:
+          cron: "0 13 * * 2"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - gem
+      - docker-image:
+          requires:
+            - gem
