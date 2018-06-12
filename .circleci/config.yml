@@ -26,6 +26,9 @@ jobs:
             - build
 
   docker-image:
+    branches:
+      only:
+        - docker
     docker:
       - image: docker
     steps:
